@@ -4,9 +4,7 @@ from time import sleep
 import machine
 from machine import Pin
 import sys
-
-ssid = 'A25 de Renato'
-password = 'renatincueca1'
+from config import SSID as ssid, PASSWORD as password
 
 pico_led = Pin('LED', Pin.OUT)
 
