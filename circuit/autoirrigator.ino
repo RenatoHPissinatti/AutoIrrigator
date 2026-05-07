@@ -1,14 +1,8 @@
 #include <WiFi.h>
 #include <DHT.h>
 #include <PubSubClient.h>
+#include "config.h"
 
-// — Configurações WiFi — altere para sua rede
-const char* WIFI_SSID     = "SUA_REDE_WIFI";
-const char* WIFI_PASSWORD = "SUA_SENHA_WIFI";
-
-// — Configurações MQTT — altere para o IP do seu broker (ex: Mosquitto local)
-const char* MQTT_BROKER = "192.168.1.100";
-const int   MQTT_PORT   = 1883;
 const char* MQTT_CLIENT = "autoirrigator-esp32";
 
 // — Tópicos MQTT —

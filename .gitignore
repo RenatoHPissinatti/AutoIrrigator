@@ -1,0 +1,8 @@
+# — Configurações sensíveis do ESP32 —
+circuit/config.h
+
+# — Flutter —
+App/irrigator/.dart_tool/
+App/irrigator/build/
+App/irrigator/.flutter-plugins
+App/irrigator/.flutter-plugins-dependencies
