@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 
@@ -9,16 +10,67 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _sistemaLigado = true;
-  int _selectedTimeIndex = 1;
-
   static const _darkGreen = Color(0xFF1B3826);
   static const _cardGreen = Color(0xFF2D5040);
   static const _brightGreen = Color(0xFF52D98D);
   static const _accentGreen = Color(0xFF52B788);
   static const _bgColor = Color(0xFFF2EDE4);
 
+  bool _sistemaLigado = true;
+  int _selectedTimeIndex = 1;
+  bool _isIrrigating = false;
+  int _elapsedSeconds = 0;
+  int _totalSeconds = 0;
+  DateTime? _startTime;
+  Timer? _timer;
+
   final List<String> _tempos = ['5 min', '15 min', '30 min', '1 h'];
+  final List<int> _temposEmSegundos = [300, 900, 1800, 3600];
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startIrrigation() {
+    setState(() {
+      _isIrrigating = true;
+      _elapsedSeconds = 0;
+      _totalSeconds = _temposEmSegundos[_selectedTimeIndex];
+      _startTime = DateTime.now();
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_elapsedSeconds >= _totalSeconds) {
+        _stopIrrigation();
+      } else {
+        setState(() => _elapsedSeconds++);
+      }
+    });
+  }
+
+  void _stopIrrigation() {
+    _timer?.cancel();
+    setState(() {
+      _isIrrigating = false;
+      _elapsedSeconds = 0;
+      _totalSeconds = 0;
+      _startTime = null;
+    });
+  }
+
+  String _formatTime(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  String _formatStartTime() {
+    if (_startTime == null) return '';
+    final h = _startTime!.hour.toString().padLeft(2, '0');
+    final m = _startTime!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,6 +228,7 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // — cabeçalho do card (sempre visível) —
               Row(
                 children: [
                   Container(
@@ -203,8 +256,15 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         Text(
-                          'Em espera - próximo às 06:00',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          _isIrrigating
+                              ? 'Manual • iniciado às ${_formatStartTime()}'
+                              : 'Em espera - próximo às 06:00',
+                          style: TextStyle(
+                            color: _isIrrigating
+                                ? _accentGreen
+                                : Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -218,59 +278,137 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 20),
-              Text(
-                'Irrigar agora por quanto tempo ?',
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: List.generate(_tempos.length, (i) {
-                  final selected = _selectedTimeIndex == i;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedTimeIndex = i),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected ? _darkGreen : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected ? _darkGreen : Colors.grey[300]!,
+
+              // — estado: irrigando —
+              if (_isIrrigating) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tempo restante',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    Text(
+                      _formatTime(_totalSeconds - _elapsedSeconds),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: _totalSeconds > 0
+                        ? _elapsedSeconds / _totalSeconds
+                        : 0,
+                    minHeight: 6,
+                    backgroundColor: Colors.grey[200],
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(_accentGreen),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_formatTime(_elapsedSeconds)} decorridos',
+                      style: const TextStyle(
+                        color: _accentGreen,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '${_tempos[_selectedTimeIndex]} no total',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _stopIrrigation,
+                    icon: const Icon(Icons.stop, size: 18),
+                    label: const Text('Parar irrigação'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              // — estado: em espera —
+              if (!_isIrrigating) ...[
+                Text(
+                  'Irrigar agora por quanto tempo ?',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: List.generate(_tempos.length, (i) {
+                    final selected = _selectedTimeIndex == i;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedTimeIndex = i),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Text(
-                          _tempos[i],
-                          style: TextStyle(
-                            color: selected ? Colors.white : Colors.black87,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected
+                                  ? _accentGreen
+                                  : Colors.grey[300]!,
+                              width: selected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            _tempos[i],
+                            style: TextStyle(
+                              color: selected ? _accentGreen : Colors.black54,
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _darkGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text('Irrigar agora • ${_tempos[_selectedTimeIndex]}'),
+                    );
+                  }),
                 ),
-              ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _sistemaLigado ? _startIrrigation : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _darkGreen,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[300],
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child:
+                        Text('Irrigar agora • ${_tempos[_selectedTimeIndex]}'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -282,9 +420,9 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Programação de hoje',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          _isIrrigating ? 'Hoje' : 'Programação de hoje',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Container(
