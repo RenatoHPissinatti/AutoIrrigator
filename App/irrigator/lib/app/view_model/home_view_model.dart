@@ -1,23 +1,35 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../model/sensor_data.dart';
+import '../shared/mqtt_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
+  late final MqttService _mqttService;
+
   bool sistemaLigado = true;
   int selectedTimeIndex = 1;
   bool isIrrigating = false;
   int elapsedSeconds = 0;
   int totalSeconds = 0;
   DateTime? startTime;
-
   Timer? _timer;
 
   final List<String> tempos = ['5 min', '15 min', '30 min', '1 h'];
   final List<int> temposEmSegundos = [300, 900, 1800, 3600];
 
+  SensorData get sensorData => _mqttService.sensorData;
+  bool get isConnected => _mqttService.isConnected;
+
   double get progress =>
       totalSeconds > 0 ? elapsedSeconds / totalSeconds : 0;
 
   int get remainingSeconds => totalSeconds - elapsedSeconds;
+
+  HomeViewModel() {
+    _mqttService = MqttService();
+    _mqttService.addListener(notifyListeners);
+    _mqttService.connect();
+  }
 
   String formatTime(int seconds) {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
@@ -49,6 +61,8 @@ class HomeViewModel extends ChangeNotifier {
     startTime = DateTime.now();
     notifyListeners();
 
+    _mqttService.publishIrrigate(true);
+
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (elapsedSeconds >= totalSeconds) {
         stopIrrigation();
@@ -66,11 +80,15 @@ class HomeViewModel extends ChangeNotifier {
     totalSeconds = 0;
     startTime = null;
     notifyListeners();
+
+    _mqttService.publishIrrigate(false);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _mqttService.removeListener(notifyListeners);
+    _mqttService.dispose();
     super.dispose();
   }
 }
