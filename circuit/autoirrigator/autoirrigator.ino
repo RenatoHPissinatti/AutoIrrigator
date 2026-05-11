@@ -4,19 +4,19 @@
 
 #define DHTTYPE DHT11
 
- const char* ssid = "M55 de Murilo";
- const char* password = "CRVG1898";
+ const char* ssid = "A25 de Renato";
+ const char* password = "renatincueca1";
 
 const char *mqtt_broker = "test.mosquitto.org";
 const int mqtt_port = 1883;
 
 // Tópicos MQTT
-const char* topico_pub_umidade_solo = "horta/irrigation/solo";
-const char* topico_pub_temperatura  = "horta/irrigation/temperatura";
-const char* topico_pub_status_bomba = "horta/irrigation/bomba/status";
+const char* topico_pub_umidade_solo = "horta/irrigation_djmr/solo";
+const char* topico_pub_temperatura  = "horta/irrigation_djmr/temperatura";
+const char* topico_pub_status_bomba = "horta/irrigation_djmr/bomba/status";
 
 // Instâncias do Wifi e MQTT
-WifiClient espClient;
+WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Configuração do Hardware
@@ -51,7 +51,7 @@ void setup_wifi() {
   Serial.println("");
   Serial.println("WiFi conectado!");
   Serial.print("Endereço IP: ");
-  Serial.println(WiFi.localIP())
+  Serial.println(WiFi.localIP());
 }
 
 void reconnect() {
@@ -60,7 +60,7 @@ void reconnect() {
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
 
-    if (client.connect(clientId.c.str())) {
+    if (client.connect(clientId.c_str())) {
       Serial.println("Conectado ao Mosquitto!");
     } else {
       Serial.print("Falhou, rc=");
@@ -98,8 +98,8 @@ void loop() {
   client.loop();
 
   unsigned long tempoAtual = millis();
-  if (tempoAtual - temAnterior >= intervaloLeitura) {
-    tempoAnterior = tempoAutal;
+  if (tempoAtual - tempoAnterior >= intervaloLeitura) {
+    tempoAnterior = tempoAtual;
 
     // Leitura dos Sensores
     int leituraCrua = analogRead(PINO_SENSOR);
@@ -121,15 +121,18 @@ void loop() {
     }
 
     //Lógica de controle
+    String statusBomba = "";
     if (umidadePorcentagem < LIMITE_REGA) {
       Serial.println(">> Solo seco: LIGANDO RELE");
       digitalWrite(PINO_RELE, HIGH);
       digitalWrite(PINO_LED, HIGH);
+      statusBomba = "LIGADA";
     } 
     else {
       Serial.println(">> Solo úmido: DESLIGANDO RELE");
       digitalWrite(PINO_RELE, LOW);
       digitalWrite(PINO_LED, LOW);
+      statusBomba = "DESLIGADA";
     }
 
     Serial.println("-----------------------");
