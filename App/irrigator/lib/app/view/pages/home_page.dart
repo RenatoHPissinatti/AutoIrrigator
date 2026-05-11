@@ -100,15 +100,22 @@ class _HomePageState extends State<HomePage> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4ADE80),
+                    decoration: BoxDecoration(
+                      color: _vm.isConnected
+                          ? const Color(0xFF4ADE80)
+                          : Colors.red,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
-                  const Text(
-                    'Online',
-                    style: TextStyle(color: Color(0xFF4ADE80), fontSize: 12),
+                  Text(
+                    _vm.isConnected ? 'Online' : 'Offline',
+                    style: TextStyle(
+                      color: _vm.isConnected
+                          ? const Color(0xFF4ADE80)
+                          : Colors.red,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -122,11 +129,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildSensorCard('68%', 'Umidade do\nsolo'),
+              _buildSensorCard(_vm.sensorData.soloFormatted, 'Umidade do\nsolo'),
               const SizedBox(width: 10),
-              _buildSensorCard('27°C', 'Temperatura'),
+              _buildSensorCard(_vm.sensorData.temperaturaFormatted, 'Temperatura'),
               const SizedBox(width: 10),
-              _buildSensorCard('52%', 'Umidade do\nar'),
+              _buildSensorCard(_vm.sensorData.umidadeArFormatted, 'Umidade do\nar'),
             ],
           ),
         ],

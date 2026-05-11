@@ -7,13 +7,15 @@
  const char* ssid = "A25 de Renato";
  const char* password = "renatincueca1";
 
-const char *mqtt_broker = "test.mosquitto.org";
+const char *mqtt_broker = "broker.hivemq.com";
 const int mqtt_port = 1883;
 
 // Tópicos MQTT
 const char* topico_pub_umidade_solo = "horta/irrigation_djmr/solo";
 const char* topico_pub_temperatura  = "horta/irrigation_djmr/temperatura";
 const char* topico_pub_status_bomba = "horta/irrigation_djmr/bomba/status";
+const char* topico_sub_comando      = "horta/irrigation_djmr/comando";
+
 
 // Instâncias do Wifi e MQTT
 WiFiClient espClient;
@@ -34,6 +36,35 @@ DHT dht(PINO_DHT, DHTTYPE);
 
 unsigned long tempoAnterior = 0;
 const long intervaloLeitura = 2000;
+
+bool modoManual = false;
+String statusBomba = "DESLIGADA";
+
+void callback(char *topic, byte* payload, unsigned int length) {
+  String comandoRecebido = "";
+  for (int i = 0; i < length; i++) {
+    comandoRecebido += (char)payload[i];
+  }
+  Serial.print(">> COMANDO RECEBIDO DO APP: ");
+  Serial.println(comandoRecebido);
+
+  if (comandoRecebido == "LIGAR") {
+    modoManual = true;
+    statusBomba = "LIGADA (Manual)";
+    digitalWrite(PINO_RELE, HIGH);
+    digitalWrite(PINO_LED, HIGH);
+  } else if (comandoRecebido == "DESLIGAR") {
+    modoManual = true;
+    statusBomba = "DESLIGAR (Manual)";
+    digitalWrite(PINO_RELE, LOW);
+    digitalWrite(PINO_LED, LOW);
+  } else if (comandoRecebido == "AUTO") {
+    modoManual = false;
+    Serial.println(">> Retornando ao Modo Automático");
+  }
+
+  client.publish(topico_pub_status_bomba, statusBomba.c_str());
+}
 
 void setup_wifi() {
   delay(10);
@@ -62,6 +93,7 @@ void reconnect() {
 
     if (client.connect(clientId.c_str())) {
       Serial.println("Conectado ao Mosquitto!");
+      client.subscribe(topico_sub_comando);
     } else {
       Serial.print("Falhou, rc=");
       Serial.print(client.state());
@@ -85,8 +117,7 @@ void setup() {
   //Inicialização rede e MQTT
   setup_wifi();
   client.setServer(mqtt_broker, mqtt_port);
-
-
+  client.setCallback(callback);
   
   Serial.println("Sistema Iniciado e configurado!");
 }
@@ -121,21 +152,24 @@ void loop() {
     }
 
     //Lógica de controle
-    String statusBomba = "";
-    if (umidadePorcentagem < LIMITE_REGA) {
-      Serial.println(">> Solo seco: LIGANDO RELE");
-      digitalWrite(PINO_RELE, HIGH);
-      digitalWrite(PINO_LED, HIGH);
-      statusBomba = "LIGADA";
-    } 
-    else {
-      Serial.println(">> Solo úmido: DESLIGANDO RELE");
-      digitalWrite(PINO_RELE, LOW);
-      digitalWrite(PINO_LED, LOW);
-      statusBomba = "DESLIGADA";
+    if (modoManual == false) {
+      String statusBomba = "";
+      if (umidadePorcentagem < LIMITE_REGA) {
+        Serial.println(">> Solo seco: LIGANDO RELE");
+        digitalWrite(PINO_RELE, HIGH);
+        digitalWrite(PINO_LED, HIGH);
+        statusBomba = "LIGADA";
+      } 
+      else {
+        Serial.println(">> Solo úmido: DESLIGANDO RELE");
+        digitalWrite(PINO_RELE, LOW);
+        digitalWrite(PINO_LED, LOW);
+        statusBomba = "DESLIGADA";
+      }
+
+      Serial.println("-----------------------");
     }
 
-    Serial.println("-----------------------");
 
     // Publicação MQTT
     char msgBuffer[10];
