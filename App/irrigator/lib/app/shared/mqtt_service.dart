@@ -5,9 +5,11 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
 class MqttService extends ChangeNotifier {
-  // — Altere para o IP do seu broker MQTT (ex: Mosquitto rodando no PC) —
-  static const _broker   = 'broker.hivemq.com';
-  static const _port     = 1883;
+  // HiveMQ Cloud — preencha com o Cluster URL do console.hivemq.cloud
+  static const _broker   = '237d802ef6b84b83847c6f83e6cf17c4.s1.eu.hivemq.cloud';
+  static const _port     = 8883;
+  static const _user     = 'brainstorm_humano';
+  static const _pass     = 'Brainstorm123@';
   final String _clientId = 'app-djmr-${Random().nextInt(10000)}';
 
   // Tópicos MQTT
@@ -25,12 +27,14 @@ class MqttService extends ChangeNotifier {
 
   MqttService() {
     _client = MqttServerClient.withPort(_broker, _clientId, _port);
-    _client.logging(on: false);
+    _client.logging(on: true);
     _client.keepAlivePeriod = 20;
+    _client.secure = true; // TLS obrigatório no HiveMQ Cloud (porta 8883)
     _client.onConnected    = _onConnected;
     _client.onDisconnected = _onDisconnected;
     _client.connectionMessage = MqttConnectMessage()
         .withClientIdentifier(_clientId)
+        .authenticateAs(_user, _pass)
         .startClean()
         .withWillQos(MqttQos.atLeastOnce);
   }

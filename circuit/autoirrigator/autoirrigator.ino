@@ -1,5 +1,6 @@
 #include <WiFi.h>
-#include <DHT.h> 
+#include <WiFiClientSecure.h>
+#include <DHT.h>
 #include <PubSubClient.h>
 
 #include "config.h"
@@ -13,8 +14,8 @@ const char* topico_pub_status_bomba = "horta/irrigation_djmr/bomba/status";
 const char* topico_sub_comando      = "horta/irrigation_djmr/comando";
 
 // Instâncias do Wifi e MQTT
-
-WiFiClient espClient;
+// WiFiClientSecure permite conexão TLS (criptografada) — obrigatória no HiveMQ Cloud
+WiFiClientSecure espClient;
 PubSubClient client(espClient);
 
 // Configuração do Hardware
@@ -79,6 +80,10 @@ void setup_wifi() {
   Serial.println("WiFi conectado!");
   Serial.print("Endereço IP: ");
   Serial.println(WiFi.localIP());
+
+  // Dispensa a verificação do certificado TLS do broker
+  // (adequado para projetos de estudo — em produção use um certificado real)
+  espClient.setInsecure();
 }
 
 void reconnect() {
@@ -87,7 +92,7 @@ void reconnect() {
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
 
-    if (client.connect(clientId.c_str())) {
+    if (client.connect(clientId.c_str(), MQTT_USER, MQTT_PASS)) {
       Serial.println("Conectado ao Mosquitto!");
       client.subscribe(topico_sub_comando);
     } else {
