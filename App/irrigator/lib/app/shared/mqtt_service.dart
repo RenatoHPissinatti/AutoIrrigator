@@ -1,14 +1,13 @@
-import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
-import '../model/sensor_data.dart';
 
 class MqttService extends ChangeNotifier {
   // — Altere para o IP do seu broker MQTT (ex: Mosquitto rodando no PC) —
-  static const _broker   = 'test.mosquitto.org';
+  static const _broker   = 'broker.hivemq.com';
   static const _port     = 1883;
-  static const _clientId = 'app-djmr-${Random().nextInt(10000)}';
+  final String _clientId = 'app-djmr-${Random().nextInt(10000)}';
 
   // Tópicos MQTT
   static const _topicSubscribe = 'horta/irrigation_djmr/#'; 
@@ -44,7 +43,7 @@ class MqttService extends ChangeNotifier {
     }
 
     if (_client.connectionStatus?.state == MqttConnectionState.connected) {
-      _client.subscribe(_topicSensores, MqttQos.atLeastOnce);
+      _client.subscribe(_topicSubscribe, MqttQos.atLeastOnce);
       _client.updates?.listen(_onMessage);
     }
   }
@@ -92,7 +91,7 @@ class MqttService extends ChangeNotifier {
       return;
     }
 
-    final comandoTexto = ligarBomba ? "LIGAR" : "DESLIGAR";
+    final comandoTexto = irrigate ? "LIGAR" : "DESLIGAR";
     final builder = MqttClientPayloadBuilder()..addString(comandoTexto);
     
     _client.publishMessage(

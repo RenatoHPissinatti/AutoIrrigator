@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../model/sensor_data.dart';
 import '../shared/mqtt_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
@@ -17,8 +16,13 @@ class HomeViewModel extends ChangeNotifier {
   final List<String> tempos = ['5 min', '15 min', '30 min', '1 h'];
   final List<int> temposEmSegundos = [300, 900, 1800, 3600];
 
-  SensorData get sensorData => _mqttService.sensorData;
+  // --- GETTERS ATUALIZADOS PARA A NOVA ARQUITETURA MQTT ---
   bool get isConnected => _mqttService.isConnected;
+  
+  // Em vez de retornar um objeto SensorData, retornamos as strings individuais
+  String get umidade => _mqttService.umidadeSolo;
+  String get temperatura => _mqttService.temperaturaAr;
+  String get statusBomba => _mqttService.statusBomba;
 
   double get progress =>
       totalSeconds > 0 ? elapsedSeconds / totalSeconds : 0;
@@ -27,6 +31,8 @@ class HomeViewModel extends ChangeNotifier {
 
   HomeViewModel() {
     _mqttService = MqttService();
+    // O addListener garante que quando o MQTT receber dados novos, 
+    // o ViewModel avisará a tela para se redesenhar.
     _mqttService.addListener(notifyListeners);
     _mqttService.connect();
   }
@@ -61,6 +67,7 @@ class HomeViewModel extends ChangeNotifier {
     startTime = DateTime.now();
     notifyListeners();
 
+    // Envia o comando "LIGAR" para a ESP32
     _mqttService.publishIrrigate(true);
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -81,6 +88,7 @@ class HomeViewModel extends ChangeNotifier {
     startTime = null;
     notifyListeners();
 
+    // Envia o comando "DESLIGAR" para a ESP32
     _mqttService.publishIrrigate(false);
   }
 

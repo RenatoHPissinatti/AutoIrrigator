@@ -129,11 +129,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildSensorCard(_vm.sensorData.soloFormatted, 'Umidade do\nsolo'),
+              _buildSensorCard('${_vm.umidade}%', 'Umidade do\nsolo'),
               const SizedBox(width: 10),
-              _buildSensorCard(_vm.sensorData.temperaturaFormatted, 'Temperatura'),
+              _buildSensorCard('${_vm.temperatura}°C', 'Temperatura'),
               const SizedBox(width: 10),
-              _buildSensorCard(_vm.sensorData.umidadeArFormatted, 'Umidade do\nar'),
+              _buildSensorCard(_vm.statusBomba, 'Status da\nBomba'),
             ],
           ),
         ],
@@ -153,9 +153,9 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _brightGreen,
-                fontSize: 18,
+                fontSize: value.length > 5 ? 12 : 18, 
                 fontWeight: FontWeight.bold,
               ),
             ),
