@@ -80,10 +80,6 @@ void setup_wifi() {
   Serial.println("WiFi conectado!");
   Serial.print("Endereço IP: ");
   Serial.println(WiFi.localIP());
-
-  // Dispensa a verificação do certificado TLS do broker
-  // (adequado para projetos de estudo — em produção use um certificado real)
-  espClient.setInsecure();
 }
 
 void reconnect() {
@@ -91,6 +87,9 @@ void reconnect() {
     Serial.print("Tentando conexão MQTT...");
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
+
+    // setInsecure precisa ser chamado a cada tentativa, antes do connect()
+    espClient.setInsecure();
 
     if (client.connect(clientId.c_str(), MQTT_USER, MQTT_PASS)) {
       Serial.println("Conectado ao Mosquitto!");
