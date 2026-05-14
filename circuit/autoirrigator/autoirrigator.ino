@@ -51,7 +51,7 @@ void callback(char *topic, byte* payload, unsigned int length) {
     digitalWrite(PINO_LED, HIGH);
   } else if (comandoRecebido == "DESLIGAR") {
     modoManual = true;
-    statusBomba = "DESLIGAR (Manual)";
+    statusBomba = "DESLIGADA (Manual)";
     digitalWrite(PINO_RELE, LOW);
     digitalWrite(PINO_LED, LOW);
   } else if (comandoRecebido == "AUTO") {
@@ -149,7 +149,6 @@ void loop() {
 
     //Lógica de controle
     if (modoManual == false) {
-      String statusBomba = "";
       if (umidadePorcentagem < LIMITE_REGA) {
         Serial.println(">> Solo seco: LIGANDO RELE");
         digitalWrite(PINO_RELE, HIGH);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -16,6 +17,7 @@ class MqttService extends ChangeNotifier {
 
   late final MqttServerClient _client;
   bool isConnected = false;
+  Timer? _reconnectTimer;
 
   String umidadeSolo = "0";
   String temperaturaAr = "0.0";
@@ -50,6 +52,8 @@ class MqttService extends ChangeNotifier {
 
   void _onConnected() {
     isConnected = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     notifyListeners();
     debugPrint('[MQTT] Conectado ao broker!');
   }
@@ -58,6 +62,9 @@ class MqttService extends ChangeNotifier {
     isConnected = false;
     notifyListeners();
     debugPrint('[MQTT] Desconectado do broker.');
+    _reconnectTimer ??= Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!isConnected) await connect();
+    });
   }
 
   // Roteamento de Mensagens
@@ -104,6 +111,7 @@ class MqttService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _reconnectTimer?.cancel();
     _client.disconnect();
     super.dispose();
   }
