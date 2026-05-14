@@ -2,13 +2,9 @@
 #include <DHT.h> 
 #include <PubSubClient.h>
 
+#include "config.h"
+
 #define DHTTYPE DHT11
-
- const char* ssid = "A25 de Renato";
- const char* password = "renatincueca1";
-
-const char *mqtt_broker = "broker.hivemq.com";
-const int mqtt_port = 1883;
 
 // Tópicos MQTT
 const char* topico_pub_umidade_solo = "horta/irrigation_djmr/solo";
@@ -16,8 +12,8 @@ const char* topico_pub_temperatura  = "horta/irrigation_djmr/temperatura";
 const char* topico_pub_status_bomba = "horta/irrigation_djmr/bomba/status";
 const char* topico_sub_comando      = "horta/irrigation_djmr/comando";
 
-
 // Instâncias do Wifi e MQTT
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -70,9 +66,9 @@ void setup_wifi() {
   delay(10);
   Serial.println();
   Serial.print("Conectando-se à rede: ");
-  Serial.println(ssid);
+  Serial.println(WIFI_SSID);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -116,7 +112,7 @@ void setup() {
 
   //Inicialização rede e MQTT
   setup_wifi();
-  client.setServer(mqtt_broker, mqtt_port);
+  client.setServer(MQTT_BROKER, MQTT_PORT);
   client.setCallback(callback);
   
   Serial.println("Sistema Iniciado e configurado!");
