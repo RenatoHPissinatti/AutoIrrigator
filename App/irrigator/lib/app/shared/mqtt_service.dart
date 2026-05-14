@@ -30,7 +30,7 @@ class MqttService extends ChangeNotifier {
     _client.logging(on: true);
     _client.keepAlivePeriod = 20;
     _client.secure = true; // TLS obrigatório no HiveMQ Cloud (porta 8883)
-    _client.onBadCertificate = (_) => true; // aceita o certificado do broker
+    _client.onBadCertificate = (Object certificate) => true; // aceita o certificado do broker
     _client.onConnected    = _onConnected;
     _client.onDisconnected = _onDisconnected;
     _client.connectionMessage = MqttConnectMessage()
